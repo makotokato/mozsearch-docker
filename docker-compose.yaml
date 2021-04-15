@@ -1,0 +1,38 @@
+version: "3"
+services:
+  indexer-setup:
+    image: mozsearch-indexer
+    build:
+      context: ./indexer
+      dockerfile: Dockerfile
+    volumes:
+      - "/var/searchfox-config:/config"
+      - "/var/searchfox-index:/index"
+    working_dir: /home/builder
+    entrypoint: ["bash", "/mozsearch/infrastructure/indexer-setup.sh", "/config", "config.json", "/index"]
+
+  indexer:
+    image: mozsearch-indexer
+    build:
+      context: ./indexer
+      dockerfile: Dockerfile
+    volumes:
+      - "/var/searchfox-config:/config"
+      - "/var/searchfox-index:/index"
+    working_dir: /home/builder
+    entrypoint: ["bash", "/mozsearch/infrastructure/indexer-run.sh", "/config", "/index"]
+
+  web-server:
+    image: mozsearch-web-server
+    build:
+      context: ./web-server
+      dockerfile: Dockerfile
+    tty : true
+    ports:
+      - "8000:80"
+    volumes:
+      - "/var/searchfox-config:/config"
+      - "/var/searchfox-index:/index"
+      - "/var/searchfox-webroot:/webroot"
+    working_dir: /root
+    entrypoint: ["bash", "/root/enterypoint.sh", "/config", "config.json", "/index", "/webroot]
