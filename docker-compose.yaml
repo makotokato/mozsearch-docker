@@ -5,34 +5,52 @@ services:
     build:
       context: ./indexer
       dockerfile: Dockerfile
+    user: builder
     volumes:
-      - "/var/searchfox-config:/config"
-      - "/var/searchfox-index:/index"
+      - "${CONFIGDIR}:/config"
+      - "${MOZSEARCHDIR}:/mozsearch"
+      - index:/index
     working_dir: /home/builder
-    entrypoint: ["bash", "/mozsearch/infrastructure/indexer-setup.sh", "/config", "config.json", "/index"]
+    entrypoint: ["bash", "/mozsearch/infrastructure/indexer-setup.sh", "/config", "${CONFIGJSON}", "/index"]
 
-  indexer:
+  indexer-build-tools:
     image: mozsearch-indexer
     build:
       context: ./indexer
       dockerfile: Dockerfile
     volumes:
-      - "/var/searchfox-config:/config"
-      - "/var/searchfox-index:/index"
+      - "${CONFIGDIR}:/config"
+      - "${MOZSEARCHDIR}:/mozsearch"
+      - index:/index
+    working_dir: /mozsearch
+    entrypoint: ["make", "build-rust-tools", "build-java-tools"]
+
+  indexer:
+    build:
+      context: ./indexer
+      dockerfile: Dockerfile
+    user: builder
+    volumes:
+      - "${CONFIGDIR}:/config"
+      - "${MOZSEARCHDIR}:/mozsearch"
+      - index:/index
     working_dir: /home/builder
     entrypoint: ["bash", "/mozsearch/infrastructure/indexer-run.sh", "/config", "/index"]
 
-  web-server:
-    image: mozsearch-web-server
+  web:
+    image: mozsearch-web
     build:
       context: ./web-server
       dockerfile: Dockerfile
-    tty : true
+    user: root
     ports:
       - "8000:80"
     volumes:
-      - "/var/searchfox-config:/config"
-      - "/var/searchfox-index:/index"
-      - "/var/searchfox-webroot:/webroot"
+      - "${CONFIGDIR}:/config"
+      - "${MOZSEARCHDIR}:/mozsearch"
+      - index:/index
     working_dir: /root
-    entrypoint: ["bash", "/root/enterypoint.sh", "/config", "config.json", "/index", "/webroot]
+    entrypoint: ["bash", "/root/entrypoint.sh", "/config", "${CONFIGJSON}", "/index", "/webroot"]
+
+volumes:
+    index:
