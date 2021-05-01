@@ -1,7 +1,19 @@
 version: "3"
 services:
+  volume-setup:
+    image: mozsearch-indexer
+    build:
+      context: ./indexer
+      dockerfile: Dockerfile
+    user: root
+    volumes:
+      - index:/index
+    entrypoint: ["chown", "builder", "/index"]
+
   indexer-setup:
     image: mozsearch-indexer
+    depends_on:
+      - volume-setup
     build:
       context: ./indexer
       dockerfile: Dockerfile
@@ -12,18 +24,6 @@ services:
       - index:/index
     working_dir: /home/builder
     entrypoint: ["bash", "/mozsearch/infrastructure/indexer-setup.sh", "/config", "${CONFIGJSON}", "/index"]
-
-  indexer-build-tools:
-    image: mozsearch-indexer
-    build:
-      context: ./indexer
-      dockerfile: Dockerfile
-    volumes:
-      - "${CONFIGDIR}:/config"
-      - "${MOZSEARCHDIR}:/mozsearch"
-      - index:/index
-    working_dir: /mozsearch
-    entrypoint: ["make", "build-rust-tools", "build-java-tools"]
 
   indexer:
     build:
